@@ -8,13 +8,13 @@
   
 - **原型链**
 
-  - JavaScript中每个对象都有私有属性`__proto__`指向它的构造函数的原型对象`prototype`，该原型对象也有自己的原型对象(也是通过`__proto__`访问)，层层向上直到null，null没有原型并作为这个原型链中的最后一个环节。 JavaScript中所有对象都是位于原型链顶端Object的实例
+  - 主要是为了解决属性和方法的继承。JavaScript中每个对象都有私有属性`__proto__`指向它的构造函数的原型对象`prototype`，该原型对象也有自己的原型对象(也是通过`__proto__`访问)，层层向上直到null，null没有原型并作为这个原型链中的最后一个环节。 JavaScript中所有对象都是位于原型链顶端Object的实例
 
     关系：`instance.__proto__ === instance.constructor.prototype`
 
   ​                   `Function.prototype.__proto__ === Object.prototype`
 
-  - 对象中都有私有属性`__proto__`指向它的构造函数的原型对象`prototype`，函数对象除了有`__proto__`属性之外，还有`prototype`属性，当函数对象作为构造函数创建实例时，该`prototype`属性将被作为实例对象的`__proto__`指向的值（`__proto__`向上，`prototype`向下）
+  - 对象中都有私有属性`__proto__`指向它的构造函数的原型对象`prototype`，函数对象(除了箭头函数)除了有`__proto__`属性之外，还有`prototype`属性，当函数对象作为构造函数创建实例时，该`prototype`属性将被作为实例对象的`__proto__`指向的值（`__proto__`向上，`prototype`向下）
   - 当一个对象调用属性/方法但在自身不存在时，会通过私有属性`__proto__`指向原型对象`prototype`上去找，如果没找到，就去原型的原型找，依次类推，直到找到该属性/方法、找不到返回`undefined`，从而形成原型链（`prototype`可以理解为存放所有实例公用的属性/方法）
 
 ## new
@@ -45,14 +45,6 @@
      - Son的prototype被重写，因此还需要重新为Son指定构造函数constructor 
      - 在Son.prototype重写之前的原型链上的属性和方法都会丢失
 
-   **原型链继承 — Object.setPrototypeOf()**
-
-   - 实现：
-     - 使用es6的`Object.setPrototypeOf()`来为Son设置原型对象`Object.setPrototypeOf(Son.prototype,new Father())`
-
-   - 特性：
-     - Son原型链上的属性值修改都会在Son实例之间互相影响
-     - 与之前重写Son.prototype不同，Son原本原型链上的constructor、属性、方法都不会丢失
 
 2. **构造函数继承**
 
@@ -95,19 +87,6 @@
      - 直接拿Father的原型对象，而不是Father实例
      - 仍然是Son的constructor被重写、Son之前的prototype上的属性或方法都丢失
 
-   **寄生组合继承 — Object.setPrototypeOf()**
-
-   - 实现：
-
-     - 原型链+构造函数的组合继承
-
-     ​       `Father.call(this) `
-
-     ​       `Object.setPrototypeOf(Son.prototype, Father.prototype)`
-
-   - 特性：
-
-     - 直接拿Father的原型对象进行原型链链接，而不是Father实例
 
 5. **类继承**
 
@@ -270,6 +249,8 @@
 
 - **async await**
 
+  - `async`函数就是将生成器函数（Generator ）的星号（`*`）替换成`async`，将`yield`替换成`await`，仅此而已
+
   - `async`，用来声明一个异步方法，返回一个`promise`对象
 
   - `await`，等待promise异步方法执行并返回结果（并不是把异步变为同步），await后面的代码为微任务，相当于`promsie.then()`（只有async里面的、await后面的代码会被阻塞，async外的代码是不会被阻塞的）
@@ -280,22 +261,35 @@
 
 ##迭代器对象、生成器函数
 
-- **迭代器：**
+-- **迭代器：**
 
-  - **特点：**
-    - 迭代器是一个对象，迭代器是通过重复调用`next()`方法按顺序返回可迭代对象中的元素，返回值为具有value、done属性的一个对象，其中value为当前迭代的返回值，done为是否已经迭代完的布尔值，未终止迭代done为false，终止迭代后done为true
+  - Iterator 的作用有三个：一是为各种数据结构，提供一个统一简便的访问接口；二是使得数据结构的成员能够按某种次序排列；三==Iterator 接口主要供`for...of`消费。==
 
-- **生成器：**
+    Iterator 的遍历过程是这样的。
 
-  - **特点：**
+    （1）创建一个指针对象，指向当前数据结构的起始位置。也就是说，==迭代器对象本质上，就是一个指针对象。==
 
-    - 生成器函数使用`function*`编写，生成器函数提供了一个强大的选择：它允许你定义一个包含自有迭代算法的函数， 同时它可以自动维护自己的状态
+    （2）第一次调用指针对象的`next`方法，可以将指针指向数据结构的第一个成员。
 
-    - 首次调用时并不会马上执行它里面的语句，而是返回一个生成器（Generator）的迭代器对象（Iterator）且生成器状态为`<suspended>`。当这个迭代器的`next() `方法第一次被调用时，其内的语句会执行到第一个`yield`位置为止，并返回`yield`后紧跟的值。生成器函数在执行时能暂停，后面又能从暂停处继续执行。如果遇到`yield*`，则表示将执行权移交给下一个生成器函数或可迭代对象（即当前生成器暂停执行，后面的如果还有yield语句也不生效了）
+    （3）第二次调用指针对象的`next`方法，指针就指向数据结构的第二个成员。
 
-      注：yield*1 => 会报错，因为1是非迭代对象，无法移交执行权
+    （4）不断调用指针对象的`next`方法，直到它指向数据结构的结束位置。
 
-    - `next()`方法返回一个对象，这个对象包含两个属性：value和done，value属性表示本次yield表达式的返回值，done属性为布尔类型，表示生成器后续是否还有yield语句，即生成器函数是否已经执行完毕并返回
+    ==每一次调用`next`方法，都会返回一个包含`value`和`done`两个属性的对象。其中，`value`属性是当前成员的值，`done`属性是一个布尔值，表示遍历是否结束。==
+
+- **生成器：**：
+
+  - Generator 函数是一个状态机，封装了多个内部状态。还是一个迭代器对象生成函数。
+
+    执行 Generator 函数会返回一个迭代器对象,可以依次迭代 Generator 函数内部的每一个状态。
+
+    形式上，Generator 函数是一个普通函数，但是有两个特征。一是，`function`关键字与函数名之间有一个星号；二是，函数体内部使用`yield`表达式，定义不同的内部状态（`yield`在英语里的意思就是“产出”）。  
+
+    **生成器的迭代过程**
+
+    调用 Generator 函数后，该函数并不执行，返回的也不是函数运行结果，而是一个指向内部状态的指针对象，也就是迭代器对象。
+
+    下一步，必须调用迭代器对象的`next`方法，使得指针移向下一个状态。也就是说，每次调用`next`方法，内部指针就从函数头部或上一次停下来的地方开始执行，直到遇到下一个`yield`表达式（或`return`语句）为止。换言之，Generator 函数是分段执行的，`yield`表达式是暂停执行的标记，而`next`方法可以恢复执行。
 
   - **代码：**
 
@@ -329,9 +323,7 @@
     iterator.next()  // { value: undefined, done: true } 
     ```
 
-- **async await**
 
-  - 特点：`async`函数就是将生成器函数（Generator ）的星号（`*`）替换成`async`，将`yield`替换成`await`，仅此而已
 
 ## 可迭代、可枚举
 
@@ -391,7 +383,13 @@ for (let item of [1,2,3].entries())   => [0,1]、[1, 2]、[2, 3]
 
 ## import、require、export
 
-待补充
+ESModule的`export`输出值的引用，与其对应的值是动态绑定关系，即通过该接口，可以取到模块内部实时的值。
+ESModule的`import`命令输入的变量都是只读的，不允许在加载模块的脚本里面改写。在编译时异步运行引入的模块。
+`import` 和`export`命令可以出现在模块的任何位置，只要处于模块顶层就可以。不可以出现在块级作用域里面。
+ESModule的`import`函数是运行时异步加载的。可做异步引入组件,可以出现在块级作用域里面。
+
+CommonJS的`Module.exports`输出的是值的缓存，不存在动态更新。
+require 函数是同步加载,运行时同步运行。
 
 # 基本结构
 
